@@ -2,10 +2,1092 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>낚시 콘텐츠 포트폴리오</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>낚시 프로토타입 — Fishing Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #060912;
+      --bg: #0a0e1a;
+      --bg-elev: #111726;
+      --line: #1f2733;
+      --line-bright: #2a3441;
+      --text: #e8eef5;
+      --text-mute: #8b96a8;
+      --text-dim: #5c6675;
+      --accent: #d4a373;
+      --accent-bright: #e8b886;
+      --water: #4a7a8c;
+      --water-deep: #2c4a56;
+      --water-glow: #6ba8b8;
+      --signal: #6ba368;
+      --warn: #d4756b;
+      --moon: #f5e6c8;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg-deep);
+      color: var(--text);
+      font-family: 'Noto Sans KR', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      user-select: none;
+    }
+
+    .frame {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      border: 1px solid var(--line);
+      background: var(--bg);
+      margin-bottom: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      color: var(--text-mute);
+    }
+
+    .topbar-left .dot {
+      width: 6px;
+      height: 6px;
+      background: var(--signal);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--signal);
+      animation: blink 2s ease infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .topbar-right {
+      display: flex;
+      gap: 24px;
+      color: var(--text-dim);
+    }
+
+    .stat span {
+      color: var(--accent);
+      margin-left: 6px;
+    }
+
+    .stage {
+      flex: 1;
+      position: relative;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, #0a0e1a 0%, #060912 60%, #030608 100%);
+      overflow: hidden;
+      min-height: 520px;
+      cursor: pointer;
+    }
+
+    .stage svg.scene {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .status-text {
+      position: absolute;
+      top: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Bodoni Moda', serif;
+      font-style: italic;
+      font-size: 1.4rem;
+      color: var(--text);
+      text-align: center;
+      letter-spacing: 0.02em;
+      pointer-events: none;
+      z-index: 10;
+      transition: opacity 0.4s ease;
+      text-shadow: 0 2px 20px rgba(0,0,0,0.8);
+    }
+
+    .status-sub {
+      font-family: 'JetBrains Mono', monospace;
+      font-style: normal;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      color: var(--text-mute);
+      text-transform: uppercase;
+      margin-top: 8px;
+      display: block;
+    }
+
+    .bite-alert {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      font-family: 'Bodoni Moda', serif;
+      font-size: 5rem;
+      color: var(--accent-bright);
+      pointer-events: none;
+      z-index: 20;
+      text-shadow: 0 0 40px var(--accent), 0 0 80px var(--accent);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .bite-alert.show {
+      transform: translate(-50%, -50%) scale(1);
+      animation: biteShake 0.4s ease infinite;
+    }
+
+    @keyframes biteShake {
+      0%, 100% { transform: translate(-50%, -50%) scale(1) rotate(0); }
+      25% { transform: translate(-52%, -50%) scale(1.05) rotate(-3deg); }
+      75% { transform: translate(-48%, -50%) scale(1.05) rotate(3deg); }
+    }
+
+    .cast-gauge {
+      position: absolute;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 320px;
+      height: 12px;
+      background: var(--bg);
+      border: 1px solid var(--line-bright);
+      overflow: hidden;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 15;
+    }
+
+    .cast-gauge.active { opacity: 1; }
+
+    .cast-gauge-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--signal), var(--accent), var(--warn));
+    }
+
+    .cast-gauge-target {
+      position: absolute;
+      top: -4px;
+      bottom: -4px;
+      left: 70%;
+      width: 12%;
+      border-left: 1px solid var(--accent);
+      border-right: 1px solid var(--accent);
+      background: rgba(212, 163, 115, 0.15);
+    }
+
+    .cast-label {
+      position: absolute;
+      bottom: 145px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 15;
+    }
+
+    .cast-label.active { opacity: 1; }
+
+    .fight-panel {
+      position: absolute;
+      top: 50%;
+      right: 40px;
+      transform: translateY(-50%);
+      width: 60px;
+      height: 320px;
+      opacity: 0;
+      transition: opacity 0.4s;
+      pointer-events: none;
+      z-index: 15;
+    }
+
+    .fight-panel.active { opacity: 1; }
+
+    .tension-gauge {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border: 1px solid var(--line-bright);
+      background: var(--bg);
+    }
+
+    .tension-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 50%;
+      background: linear-gradient(0deg, var(--signal) 0%, var(--accent) 60%, var(--warn) 100%);
+      transition: height 0.1s linear;
+    }
+
+    .tension-zone {
+      position: absolute;
+      left: -4px;
+      right: -4px;
+      bottom: 35%;
+      height: 30%;
+      border-top: 1px dashed var(--accent);
+      border-bottom: 1px dashed var(--accent);
+      background: rgba(212, 163, 115, 0.06);
+    }
+
+    .tension-label {
+      position: absolute;
+      width: 100%;
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+
+    .tension-label.top { top: -20px; }
+    .tension-label.bottom { bottom: -20px; }
+
+    .tension-label.zone {
+      top: 50%;
+      transform: translateY(-50%);
+      right: -90px;
+      width: auto;
+      color: var(--accent);
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .strike-window {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      pointer-events: none;
+      z-index: 14;
+      opacity: 0;
+    }
+
+    .strike-window.show {
+      animation: strikeRing 0.5s ease forwards;
+    }
+
+    @keyframes strikeRing {
+      0% { transform: translate(-50%, -50%) scale(2); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+    }
+
+    .result-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(6, 9, 18, 0.92);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s;
+      z-index: 30;
+    }
+
+    .result-overlay.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .result-card {
+      background: var(--bg-elev);
+      border: 1px solid var(--line-bright);
+      padding: 48px 56px;
+      max-width: 480px;
+      width: 90%;
+      text-align: center;
+      position: relative;
+      transform: translateY(20px) scale(0.95);
+      transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .result-overlay.show .result-card {
+      transform: translateY(0) scale(1);
+    }
+
+    .result-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--accent);
+    }
+
+    .result-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.3em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .result-fish-svg {
+      width: 200px;
+      height: 120px;
+      margin: 0 auto 24px;
+    }
+
+    .result-name {
+      font-family: 'Bodoni Moda', serif;
+      font-size: 2.4rem;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      margin-bottom: 8px;
+    }
+
+    .result-name em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .result-rarity {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      color: var(--text-mute);
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+
+    .result-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      padding: 24px 0;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 32px;
+    }
+
+    .result-stat-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .result-stat-value {
+      font-family: 'Bodoni Moda', serif;
+      font-size: 1.5rem;
+      color: var(--text);
+    }
+
+    .result-stat-value em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .result-card.fail::before { background: var(--warn); }
+    .result-card.fail .result-tag { color: var(--warn); }
+
+    .btn {
+      padding: 14px 32px;
+      border: 1px solid var(--accent);
+      background: transparent;
+      color: var(--accent);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn:hover {
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    .controls-hint {
+      position: absolute;
+      bottom: 20px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .controls-hint kbd {
+      display: inline-block;
+      padding: 4px 10px;
+      margin: 0 4px;
+      border: 1px solid var(--line-bright);
+      background: var(--bg);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 10px;
+    }
+
+    .bottombar {
+      margin-top: 16px;
+      padding: 16px 24px;
+      border: 1px solid var(--line);
+      background: var(--bg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.15em;
+    }
+
+    .bottombar a {
+      color: var(--text-mute);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+
+    .bottombar a:hover { color: var(--accent); }
+
+    @media (max-width: 700px) {
+      .frame { padding: 12px; }
+      .topbar, .bottombar {
+        padding: 12px 16px;
+        font-size: 10px;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .topbar-right { gap: 12px; }
+      .fight-panel {
+        right: 16px;
+        width: 40px;
+        height: 240px;
+      }
+      .tension-label.zone { display: none; }
+      .cast-gauge { width: 80%; }
+      .status-text { font-size: 1.1rem; padding: 0 20px; width: 100%; }
+      .result-card { padding: 32px 24px; }
+      .result-name { font-size: 1.8rem; }
+    }
+  </style>
 </head>
 <body>
-  <h1>🎣 모바일 낚시 콘텐츠 포트폴리오</h1>
-  <p>준비 중입니다.</p>
+  <div class="frame">
+
+    <div class="topbar">
+      <div class="topbar-left">
+        <span class="dot"></span>
+        <span>Fishing Prototype · P · 01</span>
+      </div>
+      <div class="topbar-right">
+        <span class="stat">SPOT<span id="spot">호숫가 · 새벽</span></span>
+        <span class="stat">BAIT<span id="bait">지렁이</span></span>
+        <span class="stat">CAUGHT<span id="caught">0</span></span>
+      </div>
+    </div>
+
+    <div class="stage" id="stage">
+
+      <svg class="scene" viewBox="0 0 1100 600" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#0a0e1a"/>
+            <stop offset="60%" stop-color="#1a2030"/>
+            <stop offset="100%" stop-color="#2c4a56"/>
+          </linearGradient>
+          <linearGradient id="waterGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#2c4a56" stop-opacity="0.6"/>
+            <stop offset="100%" stop-color="#060912" stop-opacity="1"/>
+          </linearGradient>
+          <radialGradient id="moonGlow">
+            <stop offset="0%" stop-color="#f5e6c8" stop-opacity="0.4"/>
+            <stop offset="100%" stop-color="#f5e6c8" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+
+        <rect width="1100" height="380" fill="url(#skyGrad)"/>
+
+        <circle cx="850" cy="120" r="60" fill="url(#moonGlow)"/>
+        <circle cx="850" cy="120" r="28" fill="#f5e6c8" opacity="0.85"/>
+        <circle cx="858" cy="115" r="6" fill="#0a0e1a" opacity="0.15"/>
+        <circle cx="845" cy="128" r="4" fill="#0a0e1a" opacity="0.15"/>
+
+        <g fill="#f5e6c8">
+          <circle cx="120" cy="80" r="0.8" opacity="0.7"/>
+          <circle cx="280" cy="50" r="1.2" opacity="0.9"/>
+          <circle cx="450" cy="100" r="0.6" opacity="0.5"/>
+          <circle cx="620" cy="60" r="0.9" opacity="0.7"/>
+          <circle cx="980" cy="180" r="0.7" opacity="0.6"/>
+          <circle cx="200" cy="160" r="0.5" opacity="0.5"/>
+          <circle cx="380" cy="200" r="0.8" opacity="0.6"/>
+          <circle cx="700" cy="220" r="0.6" opacity="0.5"/>
+        </g>
+
+        <path d="M 0 320 L 120 280 L 240 300 L 380 260 L 520 290 L 680 270 L 820 295 L 950 275 L 1100 290 L 1100 380 L 0 380 Z"
+              fill="#0a0e1a" opacity="0.9"/>
+        <path d="M 0 350 L 180 320 L 320 340 L 480 310 L 640 335 L 800 320 L 950 340 L 1100 325 L 1100 380 L 0 380 Z"
+              fill="#060912"/>
+
+        <rect x="0" y="380" width="1100" height="220" fill="url(#waterGrad)"/>
+
+        <ellipse cx="850" cy="395" rx="40" ry="3" fill="#f5e6c8" opacity="0.4"/>
+        <ellipse cx="850" cy="410" rx="60" ry="3" fill="#f5e6c8" opacity="0.25"/>
+        <ellipse cx="850" cy="425" rx="80" ry="3" fill="#f5e6c8" opacity="0.15"/>
+        <ellipse cx="850" cy="445" rx="100" ry="3" fill="#f5e6c8" opacity="0.08"/>
+
+        <g stroke="#6ba8b8" stroke-width="0.8" fill="none" opacity="0.2">
+          <path d="M 50 420 Q 100 418, 150 420 T 250 420">
+            <animate attributeName="d" dur="6s" repeatCount="indefinite"
+              values="M 50 420 Q 100 418, 150 420 T 250 420;
+                      M 50 420 Q 100 422, 150 420 T 250 420;
+                      M 50 420 Q 100 418, 150 420 T 250 420"/>
+          </path>
+          <path d="M 400 460 Q 470 458, 540 460 T 680 460">
+            <animate attributeName="d" dur="7s" repeatCount="indefinite"
+              values="M 400 460 Q 470 458, 540 460 T 680 460;
+                      M 400 460 Q 470 462, 540 460 T 680 460;
+                      M 400 460 Q 470 458, 540 460 T 680 460"/>
+          </path>
+          <path d="M 750 500 Q 820 498, 890 500 T 1030 500">
+            <animate attributeName="d" dur="5s" repeatCount="indefinite"
+              values="M 750 500 Q 820 498, 890 500 T 1030 500;
+                      M 750 500 Q 820 502, 890 500 T 1030 500;
+                      M 750 500 Q 820 498, 890 500 T 1030 500"/>
+          </path>
+        </g>
+
+        <g stroke="#1a2030" stroke-width="1.2" fill="none" opacity="0.7">
+          <path d="M 60 380 Q 58 340, 62 310"/>
+          <path d="M 75 380 Q 78 350, 73 320"/>
+          <path d="M 1040 380 Q 1042 345, 1038 315"/>
+          <path d="M 1055 380 Q 1052 350, 1057 325"/>
+        </g>
+
+        <g id="rod">
+          <line x1="1050" y1="50" x2="600" y2="280" stroke="#8b6940" stroke-width="3" stroke-linecap="round"/>
+          <line x1="1050" y1="50" x2="600" y2="280" stroke="#d4a373" stroke-width="1" stroke-linecap="round"/>
+          <line id="line" x1="600" y1="280" x2="500" y2="430"
+                stroke="#d4a373" stroke-width="0.6" opacity="0.7"/>
+        </g>
+
+        <g id="bobber" transform="translate(500, 425)">
+          <ellipse cx="0" cy="0" rx="14" ry="3" fill="#000" opacity="0.4"/>
+          <path d="M -6 -2 L 6 -2 L 4 8 L -4 8 Z" fill="#d4756b"/>
+          <path d="M -6 -2 L 6 -2 L 5 2 L -5 2 Z" fill="#e8b886"/>
+          <line x1="0" y1="-2" x2="0" y2="-12" stroke="#d4a373" stroke-width="1"/>
+          <circle cx="0" cy="-13" r="1.5" fill="#d4a373"/>
+          <animateTransform id="bobberFloat" attributeName="transform" type="translate"
+            dur="3s" repeatCount="indefinite"
+            values="500,425; 500,427; 500,425"/>
+        </g>
+
+        <g id="biteRipple" opacity="0">
+          <circle cx="500" cy="430" r="20" fill="none" stroke="#6ba8b8" stroke-width="1"/>
+          <circle cx="500" cy="430" r="35" fill="none" stroke="#6ba8b8" stroke-width="0.6" opacity="0.6"/>
+          <circle cx="500" cy="430" r="50" fill="none" stroke="#6ba8b8" stroke-width="0.4" opacity="0.3"/>
+        </g>
+      </svg>
+
+      <div class="status-text" id="statusText">
+        강가의 새벽
+        <span class="status-sub" id="statusSub">탭하여 캐스팅 시작</span>
+      </div>
+
+      <div class="cast-label" id="castLabel">목표 구간에서 탭하여 멈추기</div>
+      <div class="cast-gauge" id="castGauge">
+        <div class="cast-gauge-fill" id="castGaugeFill"></div>
+        <div class="cast-gauge-target"></div>
+      </div>
+
+      <div class="bite-alert" id="biteAlert">!</div>
+      <div class="strike-window" id="strikeWindow"></div>
+
+      <div class="fight-panel" id="fightPanel">
+        <div class="tension-gauge">
+          <div class="tension-fill" id="tensionFill"></div>
+          <div class="tension-zone"></div>
+        </div>
+        <div class="tension-label top">High</div>
+        <div class="tension-label bottom">Low</div>
+        <div class="tension-label zone">← Safe Zone</div>
+      </div>
+
+      <div class="controls-hint" id="controlsHint">
+        <kbd>탭</kbd> 또는 <kbd>스페이스</kbd> 로 시작
+      </div>
+
+      <div class="result-overlay" id="resultOverlay">
+        <div class="result-card" id="resultCard">
+          <div class="result-tag" id="resultTag">CATCH</div>
+          <svg class="result-fish-svg" id="resultFish" viewBox="0 0 200 120"></svg>
+          <h2 class="result-name" id="resultName">— <em>—</em></h2>
+          <div class="result-rarity" id="resultRarity">— Rarity</div>
+          <div class="result-stats">
+            <div>
+              <div class="result-stat-label">Length</div>
+              <div class="result-stat-value" id="resultLength"><em>—</em>cm</div>
+            </div>
+            <div>
+              <div class="result-stat-label">Weight</div>
+              <div class="result-stat-value" id="resultWeight"><em>—</em>kg</div>
+            </div>
+          </div>
+          <button class="btn" id="resultBtn">다시 낚시하기</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="bottombar">
+      <span>PROTOTYPE · NO BACKEND · IN-MEMORY</span>
+      <a href="../../">← 메인으로</a>
+    </div>
+
+  </div>
+
+  <script>
+    const STATE = {
+      IDLE: 'idle',
+      CASTING: 'casting',
+      WAITING: 'waiting',
+      BITE: 'bite',
+      FIGHTING: 'fighting',
+      RESULT: 'result'
+    };
+
+    let state = STATE.IDLE;
+    let caughtCount = 0;
+
+    const FISH_TABLE = [
+      { name: '붕어',     latin: 'Carp',         rarity: 'Common',    weight: 30, color: '#a8896b', minLen: 15, maxLen: 28, minWt: 0.3, maxWt: 0.8 },
+      { name: '피라미',   latin: 'Minnow',       rarity: 'Common',    weight: 18, color: '#9ba8b5', minLen: 8,  maxLen: 14, minWt: 0.05, maxWt: 0.15 },
+      { name: '메기',     latin: 'Catfish',      rarity: 'Common',    weight: 12, color: '#5c6675', minLen: 25, maxLen: 45, minWt: 0.6, maxWt: 1.4 },
+      { name: '쏘가리',   latin: 'Mandarin',     rarity: 'Rare',      weight: 15, color: '#6b8b6e', minLen: 30, maxLen: 48, minWt: 0.8, maxWt: 1.8 },
+      { name: '잉어',     latin: 'Koi',          rarity: 'Rare',      weight: 10, color: '#d49860', minLen: 40, maxLen: 60, minWt: 1.5, maxWt: 3.2 },
+      { name: '향어',     latin: 'Israeli Carp', rarity: 'Rare',      weight: 5,  color: '#8b6940', minLen: 35, maxLen: 55, minWt: 1.2, maxWt: 2.6 },
+      { name: '산천어',   latin: 'Yamame',       rarity: 'Epic',      weight: 5,  color: '#6ba8b8', minLen: 25, maxLen: 38, minWt: 0.5, maxWt: 1.1 },
+      { name: '열목어',   latin: 'Manchurian',   rarity: 'Epic',      weight: 3,  color: '#a37dd4', minLen: 30, maxLen: 50, minWt: 0.9, maxWt: 2.0 },
+      { name: '황금잉어', latin: 'Golden Koi',   rarity: 'Legendary', weight: 2,  color: '#f5e6c8', minLen: 60, maxLen: 90, minWt: 4.0, maxWt: 8.5 },
+    ];
+
+    const RARITY_BONUS = { perfect: 1.5, good: 1.0, poor: 0.6 };
+
+    const stage = document.getElementById('stage');
+    const statusText = document.getElementById('statusText');
+    const statusSub = document.getElementById('statusSub');
+    const castGauge = document.getElementById('castGauge');
+    const castGaugeFill = document.getElementById('castGaugeFill');
+    const castLabel = document.getElementById('castLabel');
+    const biteAlert = document.getElementById('biteAlert');
+    const strikeWindow = document.getElementById('strikeWindow');
+    const fightPanel = document.getElementById('fightPanel');
+    const tensionFill = document.getElementById('tensionFill');
+    const resultOverlay = document.getElementById('resultOverlay');
+    const resultCard = document.getElementById('resultCard');
+    const resultTag = document.getElementById('resultTag');
+    const resultFish = document.getElementById('resultFish');
+    const resultName = document.getElementById('resultName');
+    const resultRarity = document.getElementById('resultRarity');
+    const resultLength = document.getElementById('resultLength');
+    const resultWeight = document.getElementById('resultWeight');
+    const resultBtn = document.getElementById('resultBtn');
+    const controlsHint = document.getElementById('controlsHint');
+    const caughtCounter = document.getElementById('caught');
+    const biteRipple = document.getElementById('biteRipple');
+
+    function setStatus(main, sub) {
+      statusText.firstChild.textContent = main;
+      statusSub.textContent = sub || '';
+    }
+
+    function showHint(text) {
+      controlsHint.innerHTML = text;
+    }
+
+    function pickFish(quality) {
+      const bonus = RARITY_BONUS[quality] || 1.0;
+      const adjusted = FISH_TABLE.map(f => {
+        let w = f.weight;
+        if (f.rarity === 'Rare')      w *= bonus;
+        if (f.rarity === 'Epic')      w *= bonus * bonus;
+        if (f.rarity === 'Legendary') w *= bonus * bonus * bonus;
+        return { ...f, adjustedWeight: w };
+      });
+      const total = adjusted.reduce((s, f) => s + f.adjustedWeight, 0);
+      let r = Math.random() * total;
+      for (const f of adjusted) {
+        r -= f.adjustedWeight;
+        if (r <= 0) return f;
+      }
+      return adjusted[0];
+    }
+
+    function rand(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    let castInterval = null;
+    let castProgress = 0;
+    let castDirection = 1;
+    const CAST_TARGET_MIN = 70;
+    const CAST_TARGET_MAX = 82;
+
+    function startCasting() {
+      state = STATE.CASTING;
+      setStatus('힘을 모은다', '게이지가 목표 구간에 닿을 때 탭');
+      castGauge.classList.add('active');
+      castLabel.classList.add('active');
+      castProgress = 0;
+      castDirection = 1;
+      showHint('<kbd>탭</kbd> 또는 <kbd>스페이스</kbd> 로 멈추기');
+
+      castInterval = setInterval(() => {
+        castProgress += castDirection * 1.8;
+        if (castProgress >= 100) { castProgress = 100; castDirection = -1; }
+        if (castProgress <= 0)   { castProgress = 0; castDirection = 1; }
+        castGaugeFill.style.width = castProgress + '%';
+      }, 16);
+    }
+
+    function stopCasting() {
+      clearInterval(castInterval);
+      const accuracy = (castProgress >= CAST_TARGET_MIN && castProgress <= CAST_TARGET_MAX);
+      setTimeout(() => {
+        castGauge.classList.remove('active');
+        castLabel.classList.remove('active');
+      }, 600);
+      startWaiting(accuracy);
+    }
+
+    let waitTimeout = null;
+
+    function startWaiting(accurate) {
+      state = STATE.WAITING;
+      setStatus('찌를 던졌다', '입질이 올 때까지 기다린다…');
+      showHint('<kbd>대기</kbd>');
+      const baseWait = accurate ? rand(2000, 4000) : rand(4000, 7000);
+      waitTimeout = setTimeout(() => {
+        triggerBite();
+      }, baseWait);
+    }
+
+    let biteWindow = null;
+    let biteStartTime = 0;
+    let biteSuccess = false;
+
+    function triggerBite() {
+      state = STATE.BITE;
+      biteStartTime = Date.now();
+      biteSuccess = false;
+
+      setStatus('입질이 왔다!', '지금 챔질!');
+      biteAlert.classList.add('show');
+      biteRipple.setAttribute('opacity', '1');
+      showHint('<kbd>탭</kbd> 또는 <kbd>스페이스</kbd> 로 챔질');
+
+      biteWindow = setTimeout(() => {
+        if (!biteSuccess) missBite();
+      }, 1200);
+    }
+
+    function strikeBite() {
+      if (state !== STATE.BITE) return;
+      biteSuccess = true;
+      clearTimeout(biteWindow);
+
+      const reactionTime = Date.now() - biteStartTime;
+      let quality;
+      if (reactionTime < 350) quality = 'perfect';
+      else if (reactionTime < 700) quality = 'good';
+      else quality = 'poor';
+
+      biteAlert.classList.remove('show');
+      biteRipple.setAttribute('opacity', '0');
+
+      strikeWindow.classList.remove('show');
+      void strikeWindow.offsetWidth;
+      strikeWindow.classList.add('show');
+
+      setTimeout(() => {
+        startFighting(quality);
+      }, 500);
+    }
+
+    function missBite() {
+      state = STATE.RESULT;
+      biteAlert.classList.remove('show');
+      biteRipple.setAttribute('opacity', '0');
+      showResult(null, '놓쳤다…');
+    }
+
+    let fightInterval = null;
+    let tension = 50;
+    let fishPower = 0;
+    let isPullingDown = false;
+    let fightStartTime = 0;
+    let fightCatchQuality = 'good';
+    let fightTime = 0;
+    const TENSION_SAFE_MIN = 35;
+    const TENSION_SAFE_MAX = 65;
+    const FIGHT_DURATION = 8000;
+
+    function startFighting(quality) {
+      state = STATE.FIGHTING;
+      fightCatchQuality = quality;
+      tension = 50;
+      fightStartTime = Date.now();
+      fightTime = 0;
+      isPullingDown = false;
+
+      setStatus('물고기가 저항한다', '안전 구간에서 텐션 유지');
+      fightPanel.classList.add('active');
+      tensionFill.style.height = tension + '%';
+      showHint('<kbd>홀드</kbd> 또는 <kbd>스페이스 홀드</kbd> 로 당기기');
+
+      let fishTimer = 0;
+      let fishChangeAt = rand(500, 1500);
+
+      fightInterval = setInterval(() => {
+        fishTimer += 50;
+
+        if (fishTimer > fishChangeAt) {
+          fishPower = rand(-1.2, 1.2);
+          fishTimer = 0;
+          fishChangeAt = rand(500, 1500);
+        }
+
+        if (isPullingDown) {
+          tension += 1.4 + fishPower;
+        } else {
+          tension -= 1.0 - fishPower;
+        }
+
+        if (tension > 100) {
+          endFighting(false, '줄이 끊겼다');
+          return;
+        }
+        if (tension < 0) {
+          endFighting(false, '물고기가 도망갔다');
+          return;
+        }
+
+        tensionFill.style.height = tension + '%';
+
+        if (tension >= TENSION_SAFE_MIN && tension <= TENSION_SAFE_MAX) {
+          fightTime += 50;
+        }
+
+        const progress = Math.min(100, (fightTime / FIGHT_DURATION) * 100);
+        statusSub.textContent = `진행도 ${Math.floor(progress)}%`;
+
+        if (fightTime >= FIGHT_DURATION) {
+          endFighting(true, null);
+        }
+      }, 50);
+    }
+
+    function setPulling(pulling) {
+      if (state !== STATE.FIGHTING) return;
+      isPullingDown = pulling;
+    }
+
+    function endFighting(success, failMsg) {
+      clearInterval(fightInterval);
+      fightPanel.classList.remove('active');
+      isPullingDown = false;
+
+      if (success) {
+        const fish = pickFish(fightCatchQuality);
+        showResult(fish, null);
+      } else {
+        showResult(null, failMsg);
+      }
+    }
+
+    function showResult(fish, failMsg) {
+      state = STATE.RESULT;
+      resultOverlay.classList.add('show');
+      showHint('');
+
+      if (fish) {
+        caughtCount++;
+        caughtCounter.textContent = caughtCount;
+
+        resultCard.classList.remove('fail');
+        resultTag.textContent = `Catch · ${fish.rarity}`;
+        resultName.innerHTML = `${fish.name} <em>${fish.latin}</em>`;
+        resultRarity.textContent = `${fish.rarity} Rarity`;
+
+        const len = rand(fish.minLen, fish.maxLen).toFixed(1);
+        const wt = rand(fish.minWt, fish.maxWt).toFixed(2);
+        resultLength.innerHTML = `<em>${len}</em>cm`;
+        resultWeight.innerHTML = `<em>${wt}</em>kg`;
+
+        renderFishSvg(fish);
+      } else {
+        resultCard.classList.add('fail');
+        resultTag.textContent = 'Failed';
+        resultName.innerHTML = `— <em>${failMsg}</em>`;
+        resultRarity.textContent = '다시 시도해보세요';
+        resultLength.innerHTML = '<em>—</em>';
+        resultWeight.innerHTML = '<em>—</em>';
+        resultFish.innerHTML = `
+          <text x="100" y="65" text-anchor="middle" font-family="Bodoni Moda" font-style="italic"
+                font-size="48" fill="#5c6675">×</text>
+        `;
+      }
+    }
+
+    function renderFishSvg(fish) {
+      const c = fish.color;
+      const isLegendary = fish.rarity === 'Legendary';
+      const glow = isLegendary ? `<filter id="glow"><feGaussianBlur stdDeviation="2"/></filter>` : '';
+      const glowAttr = isLegendary ? 'filter="url(#glow)"' : '';
+
+      resultFish.innerHTML = `
+        <defs>
+          ${glow}
+          <linearGradient id="fishGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${c}" stop-opacity="1"/>
+            <stop offset="100%" stop-color="${c}" stop-opacity="0.4"/>
+          </linearGradient>
+        </defs>
+        <g transform="translate(100, 60)" ${glowAttr}>
+          <path d="M -60 0 Q -50 -20, -10 -22 Q 30 -22, 50 -8 Q 60 0, 50 8 Q 30 22, -10 22 Q -50 20, -60 0 Z"
+                fill="url(#fishGrad)" stroke="${c}" stroke-width="1.2"/>
+          <path d="M -60 0 L -85 -18 L -78 0 L -85 18 Z"
+                fill="${c}" opacity="0.7" stroke="${c}" stroke-width="1"/>
+          <path d="M -10 -22 Q 0 -32, 15 -22"
+                fill="none" stroke="${c}" stroke-width="1.2"/>
+          <path d="M 0 18 Q 8 28, 18 20"
+                fill="${c}" opacity="0.5" stroke="${c}" stroke-width="0.8"/>
+          <circle cx="38" cy="-4" r="3" fill="#0a0e1a"/>
+          <circle cx="39" cy="-5" r="0.8" fill="#fff"/>
+          <path d="M 25 -10 Q 22 0, 25 10" fill="none" stroke="${c}" stroke-width="0.8" opacity="0.6"/>
+          ${fish.rarity !== 'Common' ? `
+            <g fill="none" stroke="${c}" stroke-width="0.4" opacity="0.5">
+              <path d="M 0 -10 Q 5 -5, 0 0 Q -5 -5, 0 -10"/>
+              <path d="M 10 -8 Q 15 -3, 10 2 Q 5 -3, 10 -8"/>
+              <path d="M -10 -8 Q -5 -3, -10 2 Q -15 -3, -10 -8"/>
+              <path d="M 0 5 Q 5 10, 0 15 Q -5 10, 0 5"/>
+            </g>
+          ` : ''}
+          ${isLegendary ? `
+            <g opacity="0.6">
+              <circle cx="-30" cy="-15" r="1" fill="#fff"/>
+              <circle cx="20" cy="-15" r="1" fill="#fff"/>
+              <circle cx="-15" cy="10" r="0.8" fill="#fff"/>
+              <circle cx="35" cy="5" r="1" fill="#fff"/>
+            </g>
+          ` : ''}
+        </g>
+      `;
+    }
+
+    function resetGame() {
+      state = STATE.IDLE;
+      resultOverlay.classList.remove('show');
+      setStatus('강가의 새벽', '탭하여 캐스팅 시작');
+      showHint('<kbd>탭</kbd> 또는 <kbd>스페이스</kbd> 로 시작');
+    }
+
+    function handlePress() {
+      switch (state) {
+        case STATE.IDLE:
+          startCasting();
+          break;
+        case STATE.CASTING:
+          stopCasting();
+          break;
+        case STATE.WAITING:
+          break;
+        case STATE.BITE:
+          strikeBite();
+          break;
+        case STATE.FIGHTING:
+          setPulling(true);
+          break;
+      }
+    }
+
+    function handleRelease() {
+      if (state === STATE.FIGHTING) {
+        setPulling(false);
+      }
+    }
+
+    stage.addEventListener('mousedown', e => {
+      if (e.target.closest('.result-card')) return;
+      handlePress();
+    });
+    stage.addEventListener('mouseup', handleRelease);
+    stage.addEventListener('mouseleave', handleRelease);
+    stage.addEventListener('touchstart', e => {
+      if (e.target.closest('.result-card')) return;
+      e.preventDefault();
+      handlePress();
+    }, { passive: false });
+    stage.addEventListener('touchend', e => {
+      e.preventDefault();
+      handleRelease();
+    }, { passive: false });
+
+    let spaceDown = false;
+    document.addEventListener('keydown', e => {
+      if (e.code === 'Space' && !spaceDown) {
+        e.preventDefault();
+        spaceDown = true;
+        handlePress();
+      }
+    });
+    document.addEventListener('keyup', e => {
+      if (e.code === 'Space') {
+        spaceDown = false;
+        handleRelease();
+      }
+    });
+
+    resultBtn.addEventListener('click', resetGame);
+
+    setStatus('강가의 새벽', '탭하여 캐스팅 시작');
+  </script>
+
 </body>
 </html>
